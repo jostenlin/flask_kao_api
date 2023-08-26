@@ -1,5 +1,12 @@
-from flask import request
-from flask_jwt_extended import create_access_token, JWTManager
+from datetime import timedelta
+import datetime
+
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import auth
+from flask import Flask, request, jsonify
+
+from flask_jwt_extended import create_access_token, create_refresh_token, JWTManager
 
 
 class AuthRoutes:
@@ -11,14 +18,44 @@ class AuthRoutes:
         # 登入以取得 JWT Token
         @app.route("/login", methods=["POST"])
         def login():
-            # 取得使用者傳過來的 JSON
-            credentials = request.get_json()
+            # 初始化 Firebase Admin SDK
+            cred = credentials.Certificate("./firebase_key.json")
+            firebase_admin.initialize_app(cred)
 
-            # 檢查使用者的帳號密碼是否正確
-            username = credentials.get("username")
-            password = credentials.get("password")
-            if username == "admin" and password == "password":
-                access_token = create_access_token(identity=username)
-                return {"access_token": access_token}, 200
-            else:
-                return {"error": "Invalid username or password"}, 401
+            # 取得使用者傳過來的 JSON
+            req = request.get_json()
+
+            # 驗證idtoken
+            email = req.get("email")
+            idtoken = req.get("idtoken")
+
+            try:
+                # 验证 ID Token
+                # decoded_token = auth.verify_id_token(idtoken)
+
+                # 如果成功验证，decoded_token 包含用户信息
+                # user_id = decoded_token["uid"]
+                access_token = create_access_token(
+                    identity=email, expires_delta=timedelta(hours=1)
+                )
+                refresh_token = create_refresh_token(
+                    identity=email, expires_delta=timedelta(days=1)
+                )
+                res = {
+                    "success": True,
+                    "data": {
+                        # "username": decoded_token["name"],
+                        "username": "admin",
+                        "roles": ["admin"],
+                        "accessToken": access_token,
+                        "refreshToken": refresh_token,
+                        "expires": (
+                            timedelta(hours=1) + datetime.datetime.now()
+                        ).strftime("%Y/%m/%d %H:%M:%S"),
+                        # "email": decoded_token["email"],
+                        # "picture": decoded_token["picture"],
+                    },
+                }
+                return res, 200
+            except auth.InvalidIdTokenError:
+                return jsonify({"error": "Invalid ID Token"}), 401
