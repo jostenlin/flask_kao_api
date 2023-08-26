@@ -35,11 +35,12 @@ class AuthRoutes:
 
                 # 如果成功验证，decoded_token 包含用户信息
                 # user_id = decoded_token["uid"]
+                user_id = "123"
                 access_token = create_access_token(
-                    identity=email, expires_delta=timedelta(hours=1)
+                    identity=user_id, expires_delta=timedelta(hours=1)
                 )
                 refresh_token = create_refresh_token(
-                    identity=email, expires_delta=timedelta(days=1)
+                    identity=user_id, expires_delta=timedelta(days=1)
                 )
                 res = {
                     "success": True,
@@ -59,3 +60,35 @@ class AuthRoutes:
                 return res, 200
             except auth.InvalidIdTokenError:
                 return jsonify({"error": "Invalid ID Token"}), 401
+
+        # 更新 JWT Token
+        @app.route("/refreshtoken", methods=["POST"])
+        def refreshtoken():
+            # 取得使用者傳過來的 JSON
+            req = request.get_json()
+
+            # 取得 refresh token
+            refresh_token = req.get("refreshtoken")
+
+            try:
+                # 验证 refresh token
+                decoded_token = auth.verify_refresh_token(refresh_token)
+
+                # 如果成功验证，decoded_token 包含用户信息
+                user_id = decoded_token["uid"]
+                access_token = create_access_token(
+                    identity=user_id, expires_delta=timedelta(hours=1)
+                )
+                res = {
+                    "success": True,
+                    "data": {
+                        "accessToken": access_token,
+                        "refreshToken": refresh_token,
+                        "expires": (
+                            timedelta(hours=1) + datetime.datetime.now()
+                        ).strftime("%Y/%m/%d %H:%M:%S"),
+                    },
+                }
+                return res, 200
+            except auth.invalid_refresh_token_error:
+                return {"success": False, "data": {}}, 401
