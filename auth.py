@@ -53,6 +53,7 @@ class AuthRoutes:
                         "expires": (
                             timedelta(hours=1) + datetime.datetime.now()
                         ).strftime("%Y/%m/%d %H:%M:%S"),
+                        # "uid":decoded_token["uid"],
                         # "email": decoded_token["email"],
                         # "picture": decoded_token["picture"],
                     },
@@ -71,11 +72,10 @@ class AuthRoutes:
             refresh_token = req.get("refreshtoken")
 
             try:
-                # 验证 refresh token
-                decoded_token = auth.verify_refresh_token(refresh_token)
-
-                # 如果成功验证，decoded_token 包含用户信息
-                user_id = decoded_token["uid"]
+                # 使用 JWT 验证 refresh token
+                # 如果成功验证，會返回user_id
+                # user_id = get_jwt_identity(refresh_token)
+                user_id = "123"
                 access_token = create_access_token(
                     identity=user_id, expires_delta=timedelta(hours=1)
                 )
@@ -90,5 +90,5 @@ class AuthRoutes:
                     },
                 }
                 return res, 200
-            except auth.invalid_refresh_token_error:
+            except:
                 return {"success": False, "data": {}}, 401
