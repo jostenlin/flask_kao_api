@@ -26,16 +26,17 @@ class AuthRoutes:
             req = request.get_json()
 
             # 驗證idtoken
-            email = req.get("email")
+            # email = req.get("email")
             idtoken = req.get("idtoken")
 
             try:
                 # 验证 ID Token
-                # decoded_token = auth.verify_id_token(idtoken)
+                decoded_token = auth.verify_id_token(idtoken)
 
                 # 如果成功验证，decoded_token 包含用户信息
-                # user_id = decoded_token["uid"]
-                user_id = "123"
+                user_id = decoded_token["uid"]
+                # user_id = "123"
+                
                 access_token = create_access_token(
                     identity=user_id, expires_delta=timedelta(hours=1)
                 )
@@ -45,17 +46,17 @@ class AuthRoutes:
                 res = {
                     "success": True,
                     "data": {
-                        # "username": decoded_token["name"],
-                        "username": "admin",
+                        "username": decoded_token["name"],
+                        # "username": "admin",
                         "roles": ["admin"],
                         "accessToken": access_token,
                         "refreshToken": refresh_token,
                         "expires": (
                             timedelta(hours=1) + datetime.datetime.now()
                         ).strftime("%Y/%m/%d %H:%M:%S"),
-                        # "uid":decoded_token["uid"],
-                        # "email": decoded_token["email"],
-                        # "picture": decoded_token["picture"],
+                        "uid": decoded_token["uid"],
+                        "email": decoded_token["email"],
+                        "picture": decoded_token["picture"],
                     },
                 }
                 return res, 200
